@@ -7,12 +7,6 @@ import math
 import os.path as osp
 import cv2
 
-def uv_meshgrid(w, h):
-    uv = np.stack(np.meshgrid(range(w), range(h)), axis=-1)
-    uv = uv.astype(np.float64)
-    uv[..., 0] = ((uv[..., 0] + 0.5) / w - 0.5) * 2 * np.pi
-    uv[..., 1] = ((uv[..., 1] + 0.5) / h - 0.5) * np.pi
-    return uv
 
 def random_uniform(low, high, size):
     n = (high - low) * torch.rand(size) + low
@@ -37,12 +31,12 @@ class Dataset(torch.utils.data.Dataset):
 
         # Max depth for GT
         self.max_depth = 8.0
-        self.min_depth = 0.3
+        self.min_depth = 0.1
         self.rotate = rotate
         self.flip = flip
         self.permute_color = permute_color
-        self.pano_w = 4096
-        self.pano_h = 2048
+        self.pano_w = 1024
+        self.pano_h = 512
 
 
     def __getitem__(self, idx):

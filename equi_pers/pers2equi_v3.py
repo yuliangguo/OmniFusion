@@ -155,6 +155,8 @@ def pers2equi(pers_img, fov, nrows, patch_size, erp_size, layer_name):
         save_file = {'x0':x0, 'y0':y0, 'x1':x1, 'y1':y1, 'w_list': w_list, 'mask':mask}
         torch.save(save_file, grid_file)
     else:
+        # the online merge really takes time
+        # pre-calculate the grid for once and use it during training
         load_file = torch.load(grid_file)
         #print('load_file')
         x0 = load_file['x0']

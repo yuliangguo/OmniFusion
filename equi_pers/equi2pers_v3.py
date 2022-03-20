@@ -5,6 +5,8 @@ import numpy as np
 import math
 import cv2
 
+# generate patches in a closed-form
+# the transformation and equation is referred from http://blog.nitishmutha.com/equirectangular/360degree/2017/06/12/How-to-project-Equirectangular-image-to-rectilinear-view.html
 def pair(t):
     return t if isinstance(t, tuple) else (t, t)
 

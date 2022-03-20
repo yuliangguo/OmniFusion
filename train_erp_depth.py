@@ -5,7 +5,6 @@ import sys
 import random
 import torch
 import torch.nn as nn
-from torch.nn.modules.module import register_module_full_backward_hook
 import torch.nn.parallel
 import torch.optim as optim
 import torch.nn.functional as F
@@ -19,10 +18,8 @@ from dataset_loader_stanford import Dataset
 import cv2
 import supervision as L
 import spherical as S360
-from util import load_partial_model
 from sync_batchnorm import convert_model
 import matplotlib.pyplot as plot
-import scipy.io
 #from model_spherical import Network
 from model.spherical_model import spherical_fusion
 #from model.spherical_fusion import *
@@ -47,17 +44,19 @@ parser.add_argument('--batch', type=int, default=8,
                     help='number of batch to train')
 parser.add_argument('--visualize_interval', type=int, default=20,
                     help='number of batch to train')
-parser.add_argument('--patchsize', type=list, default=(256, 256),
+parser.add_argument('--patchsize', type=list, default=(128, 128),
                     help='patch size')
-parser.add_argument('--fov', type=float, default=120,
+parser.add_argument('--lr', type=float, default=1e-4,
+                    help='initial learning rate')
+parser.add_argument('--fov', type=float, default=80,
                     help='field of view')
-parser.add_argument('--nrows', type=int, default=3,
-                    help='nrows, options are 4, 6')
+parser.add_argument('--nrows', type=int, default=4,
+                    help='number of rows, options are 3, 4, 5, 6')
 parser.add_argument('--checkpoint', default= None,
                     help='load checkpoint path')
 parser.add_argument('--save_checkpoint', default='checkpoints',
                     help='save checkpoint path')
-parser.add_argument('--save_path', default='./stanford/2048x4096/resnet34/visualize_point_1_iter',
+parser.add_argument('--save_path', default='./stanford/512x1024/resnet34/visualize_point_1_iter',
                     help='save checkpoint path')                    
 parser.add_argument('--tensorboard_path', default='logs',
                     help='tensorboard path')
@@ -75,6 +74,7 @@ else:
     shutil.rmtree(args.save_path)    
 if not os.path.isdir(os.path.join(args.save_path, args.save_checkpoint)):
     os.makedirs(os.path.join(args.save_path, args.save_checkpoint))
+    
 # result visualize Path -----------------------
 writer_path = os.path.join(args.save_path,args.tensorboard_path)
 if not os.path.isdir(writer_path):
@@ -102,7 +102,7 @@ val_file_list = args.testfile # File with list of validation files
 #-------------------------------------------------------------------
 batch_size = args.batch
 visualize_interval = args.visualize_interval
-init_lr = 1e-4
+init_lr = args.lr
 fov = (args.fov, args.fov)#(48, 48)
 patch_size = args.patchsize
 nrows = args.nrows
@@ -232,6 +232,7 @@ d3_inlier_meter = AverageMeter()
 def main():
     global_step = 0
     global_val = 0
+    # save the evaluation results into a csv file
     csv_filename = os.path.join(result_view_dir, 'logs/result_log.csv')
     fields = ['epoch', 'Abs Rel', 'Sq Rel', 'Lin RMSE', 'log RMSE', 'D1', 'D2', 'D3' , 'lr']
     csvfile = open(csv_filename, 'w', newline='')
@@ -245,8 +246,7 @@ def main():
         print('---------------Train Epoch', epoch, '----------------')
         total_train_loss = 0
         total_depth_loss = 0
-        total_normal_loss = 0
-        total_grad_loss = 0
+
         #-------------------------------
         network.train()
         # Train --------------------------------------------------------------------------------------------------
@@ -257,13 +257,13 @@ def main():
             
             equi_outputs = network(rgb, fov, patch_size, nrows)
             
+            # error map, clip at 0.1
             error = torch.abs(depth - equi_outputs) * mask
             error[error < 0.1] = 0
 
             attention_weights = torch.ones_like(mask, dtype=torch.float32, device=mask.device)
             depth_loss = L.direct.calculate_berhu_loss(equi_outputs, depth,                
-               mask=mask, weights=attention_weights) #+ L.direct.calculate_berhu_loss(coarse_outputs, depth,                
-               #mask=mask, weights=attention_weights) * 0.5        
+               mask=mask, weights=attention_weights)      
             #gt_normal = depth2normal_gpu(depth)
             #pred_normal = depth2normal_gpu(equi_outputs)           
             #normal_loss = 1 - torch.mean(torch.sum((pred_normal * gt_normal * mask), dim=[1, 2, 3], keepdim=True) / mask.sum())
@@ -288,7 +288,7 @@ def main():
                 #writer.add_image('depth coarse', colorize(vutils.make_grid(coarse_outputs[:2, ...].data, nrow=4, normalize=False)), batch_idx)    
             
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(network.parameters(), 0.5)
+            #torch.nn.utils.clip_grad_norm_(network.parameters(), 0.5)
             optimizer.step()
             #scheduler.step()
             total_train_loss += loss.item()
@@ -325,6 +325,7 @@ def main():
                 error_img = error.detach().cpu().numpy()
                 depth_prediction[depth_prediction > 8] = 0
                 
+                # save raw 3D point cloud reconstruction as ply file
                 coords = np.stack(np.meshgrid(range(w), range(h)), -1)
                 coords = np.reshape(coords, [-1, 2])
                 coords += 1
@@ -360,8 +361,6 @@ def main():
 
                 global_val+=1
                 #------------
-            #writer.add_scalar('total validation loss',total_val_loss/(len(val_dataloader)),epoch) #tensorboardX for validation in epoch        
-            #writer.add_scalar('total validation crop 26 depth rmse',total_val_crop_rmse/(len(val_dataloader)),epoch) #tensorboardX rmse for validation in epoch
             print('Epoch: {}\n'
             '  Avg. Abs. Rel. Error: {:.4f}\n'
             '  Avg. Sq. Rel. Error: {:.4f}\n'
@@ -399,7 +398,7 @@ def main():
             d2_inlier_meter.reset()
             d3_inlier_meter.reset()
     # End Training
-    print("Training Ended hahahaha!!!")
+    print("Training Ended")
     print('full training time = %.2f HR' %((time.time() - start_full_time)/3600))
     writer.close()
 #----------------------------------------------------------------------------------

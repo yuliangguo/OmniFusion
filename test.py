@@ -84,7 +84,6 @@ val_file_list = args.testfile # File with list of validation files
 #-------------------------------------------------------------------
 batch_size = args.batch
 visualize_interval = args.visualize_interval
-init_lr = 1e-4
 fov = (args.fov, args.fov)#(48, 48)
 patch_size = args.patchsize
 nrows = args.nrows
@@ -116,7 +115,6 @@ network.cuda()
 #----------------------------------------------------------
 
 print('## Batch size: {}'.format(batch_size))
-print('## learning rate: {}'.format(init_lr))  
 print('## patch size:', patch_size) 
 print('## fov:', args.fov)
 print('## Number of first model parameters: {}'.format(sum([p.data.nelement() for p in network.parameters() if p.requires_grad is True])))
@@ -199,14 +197,14 @@ with torch.no_grad():
             start_time = time.time()
         patch_depth = network(input, fov, patch_size, nrows, 2)
 
-end_time = time.time()
-total_forward = end_time - start_time
-print('Total forward time is %4.2f seconds' % total_forward)
-actual_num_runs = 50
-latency = total_forward / actual_num_runs
-fps = 1 * actual_num_runs / total_forward
-print("Latency: ", latency, "fps", fps)
-exit()      
+# end_time = time.time()
+# total_forward = end_time - start_time
+# print('Total forward time is %4.2f seconds' % total_forward)
+# actual_num_runs = 50
+# latency = total_forward / actual_num_runs
+# fps = 1 * actual_num_runs / total_forward
+# print("Latency: ", latency, "fps", fps)
+
 # Main Function ---------------------------------------------------------------------------------------------
 def main():
     global_step = 0

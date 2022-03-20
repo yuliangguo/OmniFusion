@@ -7,13 +7,6 @@ import math
 import os.path as osp
 import cv2
 
-def uv_meshgrid(w, h):
-    uv = np.stack(np.meshgrid(range(w), range(h)), axis=-1)
-    uv = uv.astype(np.float64)
-    uv[..., 0] = ((uv[..., 0] + 0.5) / w - 0.5) * 2 * np.pi
-    uv[..., 1] = ((uv[..., 1] + 0.5) / h - 0.5) * np.pi
-    return uv
-
 def random_uniform(low, high, size):
     n = (high - low) * torch.rand(size) + low
     return n.numpy()
@@ -33,13 +26,10 @@ class Dataset(torch.utils.data.Dataset):
 
         # Create tuples of inputs/GT
         self.image_list = np.loadtxt(path_to_img_list, dtype=str)
-        #n = np.random.permutation(np.arange(len(self.image_list)))
-        #self.image_list = self.image_list[n]
-        #self.image_list = self.image_list[:len(self.image_list)]
-        print(len(self.image_list))
-        # Max depth for GT
+
+        # depth for GT
         self.max_depth = 10.0
-        self.min_depth = 0.3
+        self.min_depth = 0.1
         self.rotate = rotate
         self.flip = flip
         self.permute_color = permute_color
