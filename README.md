@@ -1,5 +1,7 @@
 # OmniFusion
 ![overview](https://user-images.githubusercontent.com/13631958/159185840-573c7baf-4153-4824-97c8-7f2ce0546013.jpg)
+## Paper
+https://arxiv.org/abs/2203.00838
 ## Getting Started
 #### Requirements
 - Anaconda (tested on 4.9.2)
