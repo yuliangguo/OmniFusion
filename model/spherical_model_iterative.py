@@ -251,7 +251,11 @@ class Transformer_cascade(nn.Module):
        
         
 class spherical_fusion(nn.Module):
-    def __init__(self):
+    def __init__(self, nrows=4, npatches=18, patch_size=(128, 128), fov=(80, 80)):
+        self.nrows = nrows
+        self.npatches = npatches
+        self.patch_size = patch_size
+        self.fov = fov
         super(spherical_fusion, self).__init__()
         pretrain_model = torchvision.models.resnet34(pretrained=True)
 
@@ -260,7 +264,6 @@ class spherical_fusion(nn.Module):
 
         self.conv1 = encoder.conv1
         self.bn1 = encoder.bn1
-       # print(self.conv1)
 
         self.relu = encoder.relu
         self.layer1 = encoder.layer1  #64
@@ -268,9 +271,9 @@ class spherical_fusion(nn.Module):
         self.layer3 = encoder.layer3  #256
         self.layer4 = encoder.layer4  #512
 
-        self.down1 = nn.Conv3d(512, 512//64, kernel_size=1, stride=1, padding=0)
+        self.down1 = nn.Conv3d(512, 512//16, kernel_size=1, stride=1, padding=0)
         #self.down2 = nn.Conv3d(512, 512//64, kernel_size=1, stride=1, padding=0)
-        self.transformer = Transformer_cascade(512, 18, depth=6, num_heads=4)
+        self.transformer = Transformer_cascade(512, npatches, depth=6, num_heads=4)
         
         self.de_conv0_0 = ConvBnReLU_v2(512, 256, kernel_size=3, stride=1)
         self.de_conv0_1 = ConvBnReLU_v2(256+256, 128, kernel_size=3, stride=1) 
@@ -283,9 +286,6 @@ class spherical_fusion(nn.Module):
         self.de_conv4_0 = ConvBnReLU_v2(32, 32, kernel_size=3, stride=1)
         self.pred = nn.Conv3d(32, 1, (3, 3, 1), 1, padding=(1, 1, 0), padding_mode='zeros')
         self.weight_pred = nn.Conv3d(32, 1, (3, 3, 1), 1, padding=(1, 1, 0), padding_mode='zeros')
-        self.num_depth = 32
-        self.min_depth = 0.1
-        self.max_depth = 8.0
 
         self.mlp_points1 = nn.Sequential(
                 nn.Conv2d(3, 16, kernel_size=1, stride=1, padding=0, bias=False),
@@ -305,15 +305,15 @@ class spherical_fusion(nn.Module):
         )
 
     
-    def forward(self, high_res, fov, patch_size, nrows, iter, confidence=True):
+    def forward(self, high_res, iter, confidence=True):
         bs, _, low_erp_h, low_erp_w = high_res.shape
         device = high_res.device
         high_erp_h, high_erp_w = high_res.shape[-2:]
-        patch_h, patch_w = pair(patch_size)
+        patch_h, patch_w = pair(self.patch_size)
         low_patch_h, low_patch_w = patch_h//1, patch_w//1
         
-        low_res_patch, _, _, _= equi2pers(high_res, fov, nrows, patch_size=(low_patch_h, low_patch_w))
-        _, low_xyz, _, _ = equi2pers(high_res, fov, nrows, patch_size=(low_patch_h//4, low_patch_w//4))
+        low_res_patch, _, _, _= equi2pers(high_res, self.fov, self.nrows, patch_size=(low_patch_h, low_patch_w))
+        _, low_xyz, _, _ = equi2pers(high_res, self.fov, self.nrows, patch_size=(low_patch_h//4, low_patch_w//4))
         n_patch = low_res_patch.shape[-1]
         
         point_feat = self.mlp_points1(low_xyz.contiguous())
@@ -369,17 +369,17 @@ class spherical_fusion(nn.Module):
         de_conv4_0 = self.de_conv4_0(up) 
         
         low_pred = F.relu(self.pred(de_conv4_0))
-        #weight = torch.sigmoid(self.weight_pred(de_conv4_0))
-        low_pred = pers2equi(low_pred, fov, nrows, (low_patch_h, low_patch_w), (high_erp_h, high_erp_w), 'low_pred')  
-        #weight = pers2equi(weight, fov, nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'low_weight')      
-        #zero_weights = (weight <= 1e-8).detach().type(torch.float32)
-        #low_pred = low_pred / (weight + 1e-8 * zero_weights)
+        weight = torch.sigmoid(self.weight_pred(de_conv4_0))
+        low_pred = pers2equi(low_pred, self.fov, self.nrows, (low_patch_h, low_patch_w), (high_erp_h, high_erp_w), 'low_pred')  
+        weight = pers2equi(weight, self.fov, self.nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'low_weight')      
+        zero_weights = (weight <= 1e-8).detach().type(torch.float32)
+        low_pred = low_pred / (weight + 1e-8 * zero_weights)
 #       
         pred_list = [low_pred]
         for i in range(iter-1):
-            high_res_patch, _, _, _ = equi2pers(high_res, fov, nrows, patch_size=patch_size)
-            high_res_patch_depth, _, _, _ = equi2pers(pred_list[i], fov, nrows, patch_size=(patch_h//4, patch_w//4))
-            _, high_xyz, _, _ = equi2pers(high_res, fov, nrows, patch_size=(patch_h//4, patch_w//4))
+            high_res_patch, _, _, _ = equi2pers(high_res, self.fov, self.nrows, patch_size=self.patch_size)
+            high_res_patch_depth, _, _, _ = equi2pers(pred_list[i], self.fov, self.nrows, patch_size=(patch_h//4, patch_w//4))
+            _, high_xyz, _, _ = equi2pers(high_res, self.fov, self.nrows, patch_size=(patch_h//4, patch_w//4))
             high_xyz = high_xyz.permute(1, 2, 3, 0).unsqueeze(0)
             n_patch = high_res_patch.shape[-1]
 
@@ -438,20 +438,16 @@ class spherical_fusion(nn.Module):
             de_conv4_0 = self.de_conv4_0(up) 
 
             high_pred = F.relu(self.pred(de_conv4_0))
-            #weight = torch.sigmoid(self.weight_pred(de_conv4_0))
-            high_pred = pers2equi(high_pred, fov, nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'high_pred')  
+            weight = torch.sigmoid(self.weight_pred(de_conv4_0))
+            high_pred = pers2equi(high_pred, self.fov, self.nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'high_pred')  
+            
+            weight = pers2equi(weight, self.fov, self.nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'high_weight')      
+            zero_weights = (weight <= 1e-8).detach().type(torch.float32)
+            high_pred = high_pred / (weight + 1e-8 * zero_weights)
             pred_list.append(high_pred)
-        #weight = pers2equi(weight, fov, nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'high_weight')      
-        #zero_weights = (weight <= 1e-8).detach().type(torch.float32)
-        #high_pred = high_pred / (weight + 1e-8 * zero_weights)
 
         return pred_list
-    
-if __name__ == "__main__":
-    net = spherical_MVS()   
-    input = torch.zeros((1, 3, 128, 256), dtype=torch.float32)
-    output = net(input, input, 86, (32, 32))
-    print(output.shape)
+
 
         
             

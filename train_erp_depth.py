@@ -20,7 +20,6 @@ import supervision as L
 import spherical as S360
 from sync_batchnorm import convert_model
 import matplotlib.pyplot as plot
-#from model_spherical import Network
 from model.spherical_model import spherical_fusion
 #from model.spherical_fusion import *
 from ply import write_ply
