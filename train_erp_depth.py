@@ -52,11 +52,13 @@ parser.add_argument('--fov', type=float, default=80,
                     help='field of view')
 parser.add_argument('--nrows', type=int, default=4,
                     help='number of rows, options are 3, 4, 5, 6')
+parser.add_argument('--confidence', action='store_true', default=True,
+                    help='use confidence map or not')
 parser.add_argument('--checkpoint', default= None,
                     help='load checkpoint path')
 parser.add_argument('--save_checkpoint', default='checkpoints',
                     help='save checkpoint path')
-parser.add_argument('--save_path', default='./stanford/512x1024/resnet34/visualize_point_1_iter',
+parser.add_argument('--save_path', default='./results/stanford/512x1024/resnet34/visualize_point_1_iter',
                     help='save checkpoint path')                    
 parser.add_argument('--tensorboard_path', default='logs',
                     help='tensorboard path')
@@ -66,6 +68,7 @@ parser.add_argument('--seed', type=int, default=42, metavar='S',
                     help='random seed (default: 1)')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
+
 
 # Save Checkpoint -------------------------------------------------------------
 if not os.path.isdir(args.save_path):
@@ -84,7 +87,7 @@ writer = SummaryWriter(log_dir=writer_path)
 result_view_dir = args.save_path  
 shutil.copy('train_erp_depth.py', result_view_dir)
 shutil.copy('model/spherical_model.py', result_view_dir)
-shutil.copy('model/spherical_model_iterative.py', result_view_dir)
+#shutil.copy('model/spherical_model_iterative.py', result_view_dir)
 #if os.path.exists('grid'):
 #    shutil.rmtree('grid')
 #-----------------------------------------
@@ -106,6 +109,7 @@ init_lr = args.lr
 fov = (args.fov, args.fov)#(48, 48)
 patch_size = args.patchsize
 nrows = args.nrows
+npatches_dict = {3:10, 4:18, 5:26, 6:46}
 #-------------------------------------------------------------------
 #data loaders
 train_dataloader = torch.utils.data.DataLoader(
@@ -133,11 +137,11 @@ val_dataloader = torch.utils.data.DataLoader(
 #first network, coarse depth estimation
 # option 1, resnet 360 
 num_gpu = torch.cuda.device_count()
-network = spherical_fusion()
-network = convert_model(network)
+network = spherical_fusion(nrows=nrows, npatches=npatches_dict[nrows], patch_size=patch_size, fov=fov)
+#network = convert_model(network)
 
 # parallel on multi gpu
-network = nn.DataParallel(network)
+#network = nn.DataParallel(network)
 network.cuda()
 
 #----------------------------------------------------------
@@ -158,8 +162,7 @@ optimizer = optim.AdamW(list(network.parameters()),
 #scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=2, T_mult=2, eta_min=1e-6, last_epoch=-1)
 scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=5, T_mult=2, eta_min=1e-6, last_epoch=-1)
 #---------------------
-
-
+    
 class AverageMeter(object):
     """Computes and stores the average and current value"""
     def __init__(self):
@@ -189,6 +192,13 @@ class AverageMeter(object):
         self.count = meter_dict['count']
         self.avg = meter_dict['avg']
         
+abs_rel_error_meter = AverageMeter()
+sq_rel_error_meter = AverageMeter()
+lin_rms_sq_error_meter = AverageMeter()
+log_rms_sq_error_meter = AverageMeter()
+d1_inlier_meter = AverageMeter()
+d2_inlier_meter = AverageMeter()
+d3_inlier_meter = AverageMeter()
 
 def compute_eval_metrics(output, gt, depth_mask):
         '''
@@ -217,19 +227,11 @@ def compute_eval_metrics(output, gt, depth_mask):
         d1_inlier_meter.update(d1, N)
         d2_inlier_meter.update(d2, N)
         d3_inlier_meter.update(d3, N)
- 
- 
-abs_rel_error_meter = AverageMeter()
-sq_rel_error_meter = AverageMeter()
-lin_rms_sq_error_meter = AverageMeter()
-log_rms_sq_error_meter = AverageMeter()
-d1_inlier_meter = AverageMeter()
-d2_inlier_meter = AverageMeter()
-d3_inlier_meter = AverageMeter()
 
 
 # Main Function ---------------------------------------------------------------------------------------------
 def main():
+
     global_step = 0
     global_val = 0
     # save the evaluation results into a csv file
@@ -255,7 +257,7 @@ def main():
             bs, _, h, w = rgb.shape
             rgb, depth, mask = rgb.cuda(), depth.cuda(), mask.cuda()           
             
-            equi_outputs = network(rgb, fov, patch_size, nrows)
+            equi_outputs = network(rgb)
             
             # error map, clip at 0.1
             error = torch.abs(depth - equi_outputs) * mask
@@ -315,7 +317,7 @@ def main():
         
 
                 with torch.no_grad():
-                    equi_outputs = network(rgb, fov, patch_size, nrows)
+                    equi_outputs = network(rgb)
                     error = torch.abs(depth - equi_outputs) * mask
                     error[error < 0.1] = 0
                 

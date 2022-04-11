@@ -188,7 +188,11 @@ class Transformer_cascade(nn.Module):
        
         
 class spherical_fusion(nn.Module):
-    def __init__(self):
+    def __init__(self, nrows=4, npatches=18, patch_size=(128, 128), fov=(80, 80)):
+        self.nrows = nrows
+        self.npatches = npatches
+        self.patch_size = patch_size
+        self.fov = fov
         super(spherical_fusion, self).__init__()
         pretrain_model = torchvision.models.resnet34(pretrained=True)
 
@@ -204,8 +208,8 @@ class spherical_fusion(nn.Module):
         self.layer3 = encoder.layer3  #256
         self.layer4 = encoder.layer4  #512
 
-        self.down = nn.Conv3d(512, 512//64, kernel_size=1, stride=1, padding=0)
-        self.transformer = Transformer_cascade(512, 10, depth=6, num_heads=4)
+        self.down = nn.Conv3d(512, 512//16, kernel_size=1, stride=1, padding=0)
+        self.transformer = Transformer_cascade(512, npatches, depth=6, num_heads=4)
         
         self.de_conv0_0 = ConvBnReLU_v2(512, 256, kernel_size=3, stride=1)
         self.de_conv0_1 = ConvBnReLU_v2(256+256, 128, kernel_size=3, stride=1) 
@@ -231,13 +235,13 @@ class spherical_fusion(nn.Module):
         )
 
     
-    def forward(self, rgb, fov, patch_size, nrows, confidence=True):
+    def forward(self, rgb, confidence=True):
         bs, _, erp_h, erp_w = rgb.shape
         device = rgb.device
-        patch_h, patch_w = pair(patch_size)
+        patch_h, patch_w = pair(self.patch_size)
         
-        high_res_patch, _, _, _ = equi2pers(rgb, fov, nrows, patch_size=patch_size)
-        _, xyz, uv, center_points = equi2pers(rgb, fov, nrows, patch_size=(patch_h//4, patch_w//4))
+        high_res_patch, _, _, _ = equi2pers(rgb, self.fov, self.nrows, patch_size=self.patch_size)
+        _, xyz, uv, center_points = equi2pers(rgb, self.fov, self.nrows, patch_size=(patch_h//4, patch_w//4))
         rho = torch.ones((uv.shape[0], 1, patch_h//4, patch_w//4), dtype=torch.float32, device=device)
 
         center_points = center_points.to(device)
@@ -258,6 +262,7 @@ class spherical_fusion(nn.Module):
 
         layer4_reshape = self.down(layer4)
         layer4_reshape = layer4_reshape.reshape(bs, -1, n_patch).transpose(1, 2)
+
         layer4_reshape = self.transformer(layer4_reshape)
         layer4_reshape = layer4_reshape.transpose(1, 2).reshape(bs, -1, 1, 1, n_patch)
         layer4 = layer4 + layer4_reshape
@@ -300,12 +305,12 @@ class spherical_fusion(nn.Module):
         if confidence:
             weight = torch.sigmoid(self.weight_pred(de_conv4_0))
             pred = pred * weight
-            pred = pers2equi(pred, fov, nrows, (patch_h, patch_w), (erp_h, erp_w), 'pred')  
-            weight = pers2equi(weight, fov, nrows, (patch_h, patch_w), (erp_h, erp_w), 'weight')      
+            pred = pers2equi(pred, self.fov, self.nrows, (patch_h, patch_w), (erp_h, erp_w), 'pred')  
+            weight = pers2equi(weight, self.fov, self.nrows, (patch_h, patch_w), (erp_h, erp_w), 'weight')      
             zero_weights = (weight <= 1e-8).detach().type(torch.float32)
             pred = pred / (weight + 1e-8 * zero_weights)
         else:
-            pred = pers2equi(pred, fov, nrows, (patch_h, patch_w), (erp_h, erp_w), 'pred')  
+            pred = pers2equi(pred, self.fov, self.nrows, (patch_h, patch_w), (erp_h, erp_w), 'pred')  
         return pred
     
 if __name__ == "__main__":
