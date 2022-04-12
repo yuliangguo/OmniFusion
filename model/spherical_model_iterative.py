@@ -251,7 +251,7 @@ class Transformer_cascade(nn.Module):
        
         
 class spherical_fusion(nn.Module):
-    def __init__(self, nrows=4, npatches=18, patch_size=(128, 128), fov=(80, 80)):
+    def __init__(self, nrows=4, npatches=18, patch_size=(256, 256), fov=(80, 80)):
         self.nrows = nrows
         self.npatches = npatches
         self.patch_size = patch_size
@@ -270,8 +270,8 @@ class spherical_fusion(nn.Module):
         self.layer2 = encoder.layer2  #128
         self.layer3 = encoder.layer3  #256
         self.layer4 = encoder.layer4  #512
-
-        self.down1 = nn.Conv3d(512, 512//16, kernel_size=1, stride=1, padding=0)
+        #downrate = patch_size[0] // 16 * patch_size[1] // 16
+        self.down1 = nn.Conv3d(512, 512//64, kernel_size=1, stride=1, padding=0)
         #self.down2 = nn.Conv3d(512, 512//64, kernel_size=1, stride=1, padding=0)
         self.transformer = Transformer_cascade(512, npatches, depth=6, num_heads=4)
         
@@ -314,7 +314,7 @@ class spherical_fusion(nn.Module):
         
         low_res_patch, _, _, _= equi2pers(high_res, self.fov, self.nrows, patch_size=(low_patch_h, low_patch_w))
         _, low_xyz, _, _ = equi2pers(high_res, self.fov, self.nrows, patch_size=(low_patch_h//4, low_patch_w//4))
-        n_patch = low_res_patch.shape[-1]
+        n_patch = self.npatches
         
         point_feat = self.mlp_points1(low_xyz.contiguous())
         point_feat = point_feat.permute(1, 2, 3, 0).unsqueeze(0)
@@ -369,12 +369,16 @@ class spherical_fusion(nn.Module):
         de_conv4_0 = self.de_conv4_0(up) 
         
         low_pred = F.relu(self.pred(de_conv4_0))
-        weight = torch.sigmoid(self.weight_pred(de_conv4_0))
-        low_pred = pers2equi(low_pred, self.fov, self.nrows, (low_patch_h, low_patch_w), (high_erp_h, high_erp_w), 'low_pred')  
-        weight = pers2equi(weight, self.fov, self.nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'low_weight')      
-        zero_weights = (weight <= 1e-8).detach().type(torch.float32)
-        low_pred = low_pred / (weight + 1e-8 * zero_weights)
-#       
+        if confidence:
+            weight = torch.sigmoid(self.weight_pred(de_conv4_0))
+            low_pred *= weight
+            weight = pers2equi(weight, self.fov, self.nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'low_weight')      
+            zero_weights = (weight <= 1e-8).detach().type(torch.float32)
+            low_pred = pers2equi(low_pred, self.fov, self.nrows, (low_patch_h, low_patch_w), (high_erp_h, high_erp_w), 'low_pred')  
+            low_pred = low_pred / (weight + 1e-8 * zero_weights)
+        else:
+            low_pred = pers2equi(low_pred, self.fov, self.nrows, (low_patch_h, low_patch_w), (high_erp_h, high_erp_w), 'low_pred')  
+      
         pred_list = [low_pred]
         for i in range(iter-1):
             high_res_patch, _, _, _ = equi2pers(high_res, self.fov, self.nrows, patch_size=self.patch_size)
@@ -438,12 +442,15 @@ class spherical_fusion(nn.Module):
             de_conv4_0 = self.de_conv4_0(up) 
 
             high_pred = F.relu(self.pred(de_conv4_0))
-            weight = torch.sigmoid(self.weight_pred(de_conv4_0))
-            high_pred = pers2equi(high_pred, self.fov, self.nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'high_pred')  
-            
-            weight = pers2equi(weight, self.fov, self.nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'high_weight')      
-            zero_weights = (weight <= 1e-8).detach().type(torch.float32)
-            high_pred = high_pred / (weight + 1e-8 * zero_weights)
+            if confidence:
+                weight = torch.sigmoid(self.weight_pred(de_conv4_0))
+                high_pred *= weight
+                weight = pers2equi(weight, self.fov, self.nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'high_weight')      
+                zero_weights = (weight <= 1e-8).detach().type(torch.float32)
+                high_pred = pers2equi(high_pred, self.fov, self.nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'high_pred')  
+                high_pred = high_pred / (weight + 1e-8 * zero_weights)
+            else:
+                high_pred = pers2equi(high_pred, self.fov, self.nrows, (patch_h, patch_w), (high_erp_h, high_erp_w), 'high_pred')  
             pred_list.append(high_pred)
 
         return pred_list

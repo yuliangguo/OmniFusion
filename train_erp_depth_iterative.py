@@ -43,7 +43,7 @@ parser.add_argument('--batch', type=int, default=8,
                     help='number of batch to train')
 parser.add_argument('--visualize_interval', type=int, default=20,
                     help='number of batch to train')
-parser.add_argument('--patchsize', type=list, default=(128, 128),
+parser.add_argument('--patchsize', type=list, default=(256, 256),
                     help='patch size')
 parser.add_argument('--lr', type=float, default=1e-4,
                     help='initial learning rate')
@@ -260,9 +260,9 @@ def main():
             rgb, depth, mask = rgb.cuda(), depth.cuda(), mask.cuda()           
             
             equi_outputs_list = network(rgb, iter=iters)
-            equi_outputs = equi_outputs_list[-1]
+            #equi_outputs = equi_outputs_list[-1]
             # error map, clip at 0.1
-            error = torch.abs(depth - equi_outputs) * mask
+            error = torch.abs(depth - equi_outputs_list[-1]) * mask
             error[error < 0.1] = 0
             depth_loss = 0
             attention_weights = torch.ones_like(mask, dtype=torch.float32, device=mask.device)
@@ -279,15 +279,15 @@ def main():
 
             rgb_img = rgb.detach().cpu().numpy()
             first_prediction = equi_outputs_list[0].detach().cpu().numpy()
-            final_prediction = equi_outputs.detach().cpu().numpy()
+            final_prediction = equi_outputs_list[-1].detach().cpu().numpy()
             equi_gt = depth.detach().cpu().numpy()
             first_prediction[first_prediction > 8] = 0
             final_prediction[final_prediction > 8] = 0
             if batch_idx % visualize_interval == 0:
                 writer.add_image('RGB', vutils.make_grid(rgb[:2, [2,1,0], :, :].data, nrow=4, normalize=True), batch_idx)
                 writer.add_image('depth gt', colorize(vutils.make_grid(depth[:2, ...].data, nrow=4, normalize=False)), batch_idx)
-                writer.add_image('final depth pred', colorize(vutils.make_grid(final_prediction[:2, ...].data, nrow=4, normalize=False)), batch_idx)
-                writer.add_image('first depth pred', colorize(vutils.make_grid(first_prediction[:2, ...].data, nrow=4, normalize=False)), batch_idx)
+                writer.add_image('first depth pred', colorize(vutils.make_grid(equi_outputs_list[0][:2, ...].data, nrow=4, normalize=False)), batch_idx)
+                writer.add_image('final depth pred', colorize(vutils.make_grid(equi_outputs_list[-1][:2, ...].data, nrow=4, normalize=False)), batch_idx)
                 
                 writer.add_image('error', colorize(vutils.make_grid(error[:2, ...].data, nrow=4, normalize=False)), batch_idx) 
                 #writer.add_image('normal', vutils.make_grid(pred_normal[:2, ...].data, nrow=4, normalize=True), batch_idx)
@@ -314,7 +314,7 @@ def main():
         torch.save(network.state_dict(), os.path.join(args.save_path, args.save_checkpoint)+'/checkpoint_latest.tar')
         #-----------------------------------------------------------------------------
         scheduler.step()
-        # Valid ----------------------------------------------------------------------------------------------------
+        # Validation ------------------------------------------------------------------------------------------------------
         if epoch % 2 == 0:
             print('-------------Validate Epoch', epoch, '-----------')
             network.eval()
