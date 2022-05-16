@@ -132,7 +132,7 @@ val_dataloader = torch.utils.data.DataLoader(
 	batch_size=2,
 	shuffle=False,
 	num_workers=8,
-	drop_last=False)
+	drop_last=True)
 
 
 #----------------------------------------------------------
@@ -140,10 +140,10 @@ val_dataloader = torch.utils.data.DataLoader(
 # option 1, resnet 360 
 num_gpu = torch.cuda.device_count()
 network = spherical_fusion(nrows=nrows, npatches=npatches_dict[nrows], patch_size=patch_size, fov=fov)
-#network = convert_model(network)
+network = convert_model(network)
 
 # parallel on multi gpu
-#network = nn.DataParallel(network)
+network = nn.DataParallel(network)
 network.cuda()
 
 #----------------------------------------------------------
@@ -246,6 +246,7 @@ def main():
 
     # Start Training ---------------------------------------------------------
     start_full_time = time.time()
+    min_error = float("inf")
     for epoch in range(1, args.epochs+1):
         print('---------------Train Epoch', epoch, '----------------')
         total_train_loss = 0
@@ -311,7 +312,7 @@ def main():
 
 
         print('lr for epoch ', epoch, ' ', optimizer.param_groups[0]['lr'])
-        torch.save(network.state_dict(), os.path.join(args.save_path, args.save_checkpoint)+'/checkpoint_latest.tar')
+        torch.save(network.state_dict(), os.path.join(args.save_path, args.save_checkpoint)+'/checkpoint_latest.pth')
         #-----------------------------------------------------------------------------
         scheduler.step()
         # Validation ------------------------------------------------------------------------------------------------------
@@ -387,6 +388,9 @@ def main():
             d1_inlier_meter.avg,
             d2_inlier_meter.avg,
             d3_inlier_meter.avg))
+            if abs_rel_error_meter.avg.item() < min_error:
+                torch.save(network.state_dict(), os.path.join(args.save_path, args.save_checkpoint)+'/checkpoint_best.pth')
+                min_error = abs_rel_error_meter.avg.item()
             row = [epoch, '{:.4f}'.format(abs_rel_error_meter.avg.item()), 
                 '{:.4f}'.format(sq_rel_error_meter.avg.item()), 
                 '{:.4f}'.format(torch.sqrt(lin_rms_sq_error_meter.avg).item()),
@@ -407,6 +411,8 @@ def main():
             d1_inlier_meter.reset()
             d2_inlier_meter.reset()
             d3_inlier_meter.reset()
+            
+            
     # End Training
     print("Training Ended")
     print('full training time = %.2f HR' %((time.time() - start_full_time)/3600))

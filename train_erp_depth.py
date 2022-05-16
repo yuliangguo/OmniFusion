@@ -37,7 +37,7 @@ parser.add_argument('--trainfile', default='./filenames/train_stanford2d3d.txt',
                     help='train file name')
 parser.add_argument('--testfile', default='./filenames/test_stanford2d3d.txt',
                     help='validation file name')
-parser.add_argument('--epochs', type=int, default=80,
+parser.add_argument('--epochs', type=int, default=100,
                     help='number of epochs to train')
 parser.add_argument('--batch', type=int, default=8,
                     help='number of batch to train')
@@ -137,10 +137,10 @@ val_dataloader = torch.utils.data.DataLoader(
 # option 1, resnet 360 
 num_gpu = torch.cuda.device_count()
 network = spherical_fusion(nrows=nrows, npatches=npatches_dict[nrows], patch_size=patch_size, fov=fov)
-#network = convert_model(network)
+network = convert_model(network)
 
 # parallel on multi gpu
-#network = nn.DataParallel(network)
+network = nn.DataParallel(network)
 network.cuda()
 
 #----------------------------------------------------------
@@ -243,6 +243,7 @@ def main():
 
     # Start Training ---------------------------------------------------------
     start_full_time = time.time()
+    min_error = float("inf")
     for epoch in range(1, args.epochs+1):
         print('---------------Train Epoch', epoch, '----------------')
         total_train_loss = 0
@@ -303,7 +304,7 @@ def main():
 
 
         print('lr for epoch ', epoch, ' ', optimizer.param_groups[0]['lr'])
-        torch.save(network.state_dict(), os.path.join(args.save_path, args.save_checkpoint)+'/checkpoint_latest.tar')
+        torch.save(network.state_dict(), os.path.join(args.save_path, args.save_checkpoint)+'/checkpoint_latest.pth')
         #-----------------------------------------------------------------------------
         scheduler.step()
         # Valid ----------------------------------------------------------------------------------------------------
@@ -398,6 +399,9 @@ def main():
             d1_inlier_meter.reset()
             d2_inlier_meter.reset()
             d3_inlier_meter.reset()
+            if abs_rel_error_meter.avg.item() < min_error:
+                torch.save(network.state_dict(), os.path.join(args.save_path, args.save_checkpoint)+'/checkpoint_best.pth')
+        
     # End Training
     print("Training Ended")
     print('full training time = %.2f HR' %((time.time() - start_full_time)/3600))

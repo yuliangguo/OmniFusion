@@ -270,7 +270,7 @@ class spherical_fusion(nn.Module):
         self.layer2 = encoder.layer2  #128
         self.layer3 = encoder.layer3  #256
         self.layer4 = encoder.layer4  #512
-        #downrate = patch_size[0] // 16 * patch_size[1] // 16
+        downrate = patch_size[0] // 16 * patch_size[1] // 16
         self.down1 = nn.Conv3d(512, 512//64, kernel_size=1, stride=1, padding=0)
         #self.down2 = nn.Conv3d(512, 512//64, kernel_size=1, stride=1, padding=0)
         self.transformer = Transformer_cascade(512, npatches, depth=6, num_heads=4)
@@ -305,7 +305,7 @@ class spherical_fusion(nn.Module):
         )
 
     
-    def forward(self, high_res, iter, confidence=True):
+    def forward(self, high_res, iter, confidence=False):
         bs, _, low_erp_h, low_erp_w = high_res.shape
         device = high_res.device
         high_erp_h, high_erp_w = high_res.shape[-2:]
