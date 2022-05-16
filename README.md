@@ -16,15 +16,29 @@ We train and evaluate on [Stanford2D3D](http://buildingparser.stanford.edu/datas
 ## Usage
 ###  run:
 ```
-python train_erp_depth.py --fov 80 --patchsize (128, 128) --nrows 4
+python train_erp_depth.py --fov 80 --patchsize (256, 256) --nrows 4
 ```
 You can specify the patch fov, patch resolution, patch alignment(3, 4, 5, 6 rows).
 ### evaluate:
 ```
-python test.py
+python test.py --fov 80 --patchsize (256, 256) --nrows 4
 ```
 ## visualization:
-visualizations will be saved into tensorboard during training, depth map and point cloud will be saved locally during evaluation.
+visualizations will be saved into tensorboard during training, depth map and point cloud will be saved locally during training/evaluation.
 
 ## Sample test results
 ![qualitative](https://user-images.githubusercontent.com/13631958/159186337-b66d141c-71f5-40ec-a8ed-22353521f6d4.jpg)
+
+## Petrained models can be downloaded from [Google Drive](https://drive.google.com/drive/folders/1b6mZJhF3j914AZ6TOGXrqgtGcHzHUAOc?usp=sharing)
+
+## Please cite our paper:
+```
+@inproceedings{Li2022CVPR,
+  Title      = {OmniFusion: 360 Monocular Depth Estimation via Geometry-Aware Fusion},
+  Author     = {Li, Yuyan and Guo, Yuliang and Yan, Zhixin and Huang, Xinyu and Ye, Duan and Ren, Liu},
+  Booktitle  = {2022 Conference on Computer Vision and Pattern Recognition (CVPR)},
+  Year       = {2022},
+  Address    = {New Orleans, USA},
+  Month      = jun,
+}
+```
