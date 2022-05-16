@@ -13,6 +13,8 @@ https://arxiv.org/abs/2203.00838
 ## Datasets
 We train and evaluate on [Stanford2D3D](http://buildingparser.stanford.edu/dataset.html), 
 [360D](https://vcl3d.github.io/3D60/), [Matterport3D](https://niessner.github.io/Matterport/)
+
+## Petrained models can be downloaded from [Google Drive](https://drive.google.com/drive/folders/1b6mZJhF3j914AZ6TOGXrqgtGcHzHUAOc?usp=sharing)
 ## Usage
 ###  run:
 ```
@@ -28,8 +30,6 @@ visualizations will be saved into tensorboard during training, depth map and poi
 
 ## Sample test results
 ![qualitative](https://user-images.githubusercontent.com/13631958/159186337-b66d141c-71f5-40ec-a8ed-22353521f6d4.jpg)
-
-## Petrained models can be downloaded from [Google Drive](https://drive.google.com/drive/folders/1b6mZJhF3j914AZ6TOGXrqgtGcHzHUAOc?usp=sharing)
 
 ## Please cite our paper:
 ```
