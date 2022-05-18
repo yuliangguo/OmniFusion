@@ -10,7 +10,7 @@ This repository hosts the original implementation of CVPR 2022 (oral) paper "Omn
 
 
 ## Citation
-If you found our code helful for your own research, please cite our paper as:
+If you found our code helpful for your research, please cite our paper as:
 
 ```
 @inproceedings{Li2022CVPR,
@@ -38,7 +38,7 @@ We trained and evaluated our method on three datasets [Stanford2D3D](http://buil
 
 ## Pre-trained models
 
-Here we provide our [pre-trained models](https://drive.google.com/drive/folders/1b6mZJhF3j914AZ6TOGXrqgtGcHzHUAOc?usp=sharing) for direct evaluation.
+Our [pre-trained models](https://drive.google.com/drive/folders/1b6mZJhF3j914AZ6TOGXrqgtGcHzHUAOc?usp=sharing) are provided for direct evaluation.
 
 ##  Training
 ```
@@ -47,10 +47,10 @@ python train_erp_depth.py --fov 80 --patchsize (256, 256) --nrows 4
 You can specify the patch fov, patch resolution, patch alignment(3, 4, 5, 6 rows).
 
 ## Evaluation
-You can run the evaluation code to reproduce the results reported in our paper.
 ```
 python test.py --fov 80 --patchsize (256, 256) --nrows 4
 ```
+The evaluation code is expected reproduce the experimental results reported in our paper.
 
 ![Screen Shot 2022-05-17 at 11 14 50 PM](https://user-images.githubusercontent.com/13290379/168969991-afd0d9c5-cd18-4dda-8eaa-5ff597a6cbc2.png)
 
@@ -58,5 +58,12 @@ python test.py --fov 80 --patchsize (256, 256) --nrows 4
 ## Visualization
 For training, visual results will be saved into tensorboard. In addition, depth maps and point clouds will be saved locally during training/evaluation. Some samples of the visual results can be seen below.
 
-![qualitative](https://user-images.githubusercontent.com/13631958/159186337-b66d141c-71f5-40ec-a8ed-22353521f6d4.jpg)
+![Screen Shot 2022-05-17 at 11 31 02 PM](https://user-images.githubusercontent.com/13290379/168973637-ab76eeaf-dc5c-4c43-8037-ae80aedb3462.png)
+
+The visual comparisons to the prior arts can be observed in the following two samples.
+![Screen Shot 2022-05-17 at 11 35 53 PM](https://user-images.githubusercontent.com/13290379/168973804-247e3c02-94ca-4755-97fc-874a09c636d7.png)
+![Screen Shot 2022-05-17 at 11 36 12 PM](https://user-images.githubusercontent.com/13290379/168973828-a40ac589-9e05-4903-8723-f81fdd7de30c.png)
+
+As observed, our method recovers more structural depth maps, which appear sharper on the edges, and smoother within the surface.
+
 
