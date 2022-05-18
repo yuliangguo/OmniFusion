@@ -61,9 +61,9 @@ For training, visual results will be saved into tensorboard. In addition, depth 
 ![Screen Shot 2022-05-17 at 11 31 02 PM](https://user-images.githubusercontent.com/13290379/168973637-ab76eeaf-dc5c-4c43-8037-ae80aedb3462.png)
 
 The visual comparisons to the prior arts can be observed in the following two samples.
-![Screen Shot 2022-05-17 at 11 35 53 PM](https://user-images.githubusercontent.com/13290379/168973804-247e3c02-94ca-4755-97fc-874a09c636d7.png)
-![Screen Shot 2022-05-17 at 11 36 12 PM](https://user-images.githubusercontent.com/13290379/168973828-a40ac589-9e05-4903-8723-f81fdd7de30c.png)
+![Screen Shot 2022-05-17 at 11 49 21 PM](https://user-images.githubusercontent.com/13290379/168975739-0d6fd8e4-b88c-4e39-aae2-c5667cc3804c.png)
+![Screen Shot 2022-05-17 at 11 49 46 PM](https://user-images.githubusercontent.com/13290379/168975755-080838a1-7ea9-490d-a765-624d857f2033.png)
 
-As observed, our method recovers more structural depth maps, which appear sharper on the edges, and smoother within the surface.
+As observed, our method recovers more accurate and structural depth maps, which appear sharper on the edges, and smoother within the surface.
 
 
