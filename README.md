@@ -1,7 +1,27 @@
 # OmniFusion
-![overview](https://user-images.githubusercontent.com/13631958/159185840-573c7baf-4153-4824-97c8-7f2ce0546013.jpg)
-## Paper
-https://arxiv.org/abs/2203.00838
+
+This repository hosts the original implementation of CVPR 2022 (oral) paper "OmniFusion: 360 Monocular Depth Estimation via Geometry-Aware Fusion
+". [ArXiv link](https://arxiv.org/abs/2203.00838)
+
+<p align="center">
+  <img width="660" height="280" src="https://user-images.githubusercontent.com/13631958/159185840-573c7baf-4153-4824-97c8-7f2ce0546013.jpg">
+</p>
+
+
+## Citation
+If you found our code helful for your own research, please cite our paper as:
+
+```
+@inproceedings{Li2022CVPR,
+  Title      = {OmniFusion: 360 Monocular Depth Estimation via Geometry-Aware Fusion},
+  Author     = {Li, Yuyan and Guo, Yuliang and Yan, Zhixin and Huang, Xinyu and Ye, Duan and Ren, Liu},
+  Booktitle  = {2022 Conference on Computer Vision and Pattern Recognition (CVPR)},
+  Year       = {2022},
+  Address    = {New Orleans, USA},
+  Month      = jun,
+}
+```
+
 ## Getting Started
 #### Requirements
 - Anaconda (tested on 4.9.2)
@@ -31,14 +51,3 @@ visualizations will be saved into tensorboard during training, depth map and poi
 ## Sample test results
 ![qualitative](https://user-images.githubusercontent.com/13631958/159186337-b66d141c-71f5-40ec-a8ed-22353521f6d4.jpg)
 
-## Please cite our paper:
-```
-@inproceedings{Li2022CVPR,
-  Title      = {OmniFusion: 360 Monocular Depth Estimation via Geometry-Aware Fusion},
-  Author     = {Li, Yuyan and Guo, Yuliang and Yan, Zhixin and Huang, Xinyu and Ye, Duan and Ren, Liu},
-  Booktitle  = {2022 Conference on Computer Vision and Pattern Recognition (CVPR)},
-  Year       = {2022},
-  Address    = {New Orleans, USA},
-  Month      = jun,
-}
-```
