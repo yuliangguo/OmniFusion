@@ -271,7 +271,7 @@ class spherical_fusion(nn.Module):
         self.layer3 = encoder.layer3  #256
         self.layer4 = encoder.layer4  #512
         downrate = patch_size[0] // 16 * patch_size[1] // 16
-        self.down1 = nn.Conv3d(512, 512//64, kernel_size=1, stride=1, padding=0)
+        self.down1 = nn.Conv3d(512, 512//16, kernel_size=1, stride=1, padding=0)
         #self.down2 = nn.Conv3d(512, 512//64, kernel_size=1, stride=1, padding=0)
         self.transformer = Transformer_cascade(512, npatches, depth=6, num_heads=4)
         

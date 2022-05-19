@@ -14,7 +14,7 @@ import time
 import math
 from metrics import *
 from tqdm import tqdm
-from dataset_loader_stanford import Dataset
+from dataset_loader_360d import Dataset
 import cv2
 import supervision as L
 import spherical as S360
@@ -29,13 +29,13 @@ import shutil
 import torchvision.utils as vutils 
 
 parser = argparse.ArgumentParser(description='360Transformer')
-parser.add_argument('--input_dir', default='/media/rtx2/DATA/stanford2d3d',
-#parser.add_argument('--input_dir', default='/home/rtx2/NeurIPS/spherical_mvs/data/omnidepth',
+#parser.add_argument('--input_dir', default='/media/rtx2/DATA/stanford2d3d',
+parser.add_argument('--input_dir', default='/home/rtx2/NeurIPS/spherical_mvs/data/omnidepth',
 #parser.add_argument('--input_dir', default='/media/rtx2/DATA/Structured3D/',
                     help='input data directory')
-parser.add_argument('--trainfile', default='./filenames/train_stanford2d3d.txt',
+parser.add_argument('--trainfile', default='./filenames/train_omnidepth.txt',
                     help='train file name')
-parser.add_argument('--testfile', default='./filenames/test_stanford2d3d.txt',
+parser.add_argument('--testfile', default='./filenames/test_omnidepth.txt',
                     help='validation file name')
 parser.add_argument('--epochs', type=int, default=80,
                     help='number of epochs to train')
@@ -43,7 +43,7 @@ parser.add_argument('--batch', type=int, default=8,
                     help='number of batch to train')
 parser.add_argument('--visualize_interval', type=int, default=20,
                     help='number of batch to train')
-parser.add_argument('--patchsize', type=list, default=(256, 256),
+parser.add_argument('--patchsize', type=list, default=(128, 128),
                     help='patch size')
 parser.add_argument('--lr', type=float, default=1e-4,
                     help='initial learning rate')
@@ -59,7 +59,7 @@ parser.add_argument('--checkpoint', default= None,
                     help='load checkpoint path')
 parser.add_argument('--save_checkpoint', default='checkpoints',
                     help='save checkpoint path')
-parser.add_argument('--save_path', default='./results/stanford/512x1024/resnet34/visualize_point_2_iter',
+parser.add_argument('--save_path', default='./results/360d/256x512/resnet34/visualize_point_2_iter',
                     help='save checkpoint path')                    
 parser.add_argument('--tensorboard_path', default='logs',
                     help='tensorboard path')
@@ -161,8 +161,8 @@ optimizer = optim.AdamW(list(network.parameters()),
 
 #scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.5)   
 #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[5, 10, 20], gamma=0.2) 
-#scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=2, T_mult=2, eta_min=1e-6, last_epoch=-1)
-scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=5, T_mult=2, eta_min=1e-6, last_epoch=-1)
+scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=2, T_mult=2, eta_min=1e-6, last_epoch=-1)
+#scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=5, T_mult=2, eta_min=1e-6, last_epoch=-1)
 #---------------------
     
 class AverageMeter(object):
