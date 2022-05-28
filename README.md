@@ -3,10 +3,8 @@
 This repository hosts the original implementation of CVPR 2022 (oral) paper "OmniFusion: 360 Monocular Depth Estimation via Geometry-Aware Fusion
 ". [ArXiv link](https://arxiv.org/abs/2203.00838)
 
-![Github_gif_prepare2](https://user-images.githubusercontent.com/13290379/170796866-69352dd0-f620-4dae-a8ac-644e971c5a99.gif)
 
-
-![Github_gif_prepare](https://user-images.githubusercontent.com/13290379/170779589-a9061c75-7c00-4e61-883a-c5083b620893.gif)
+![Github_gif_prepare2](https://user-images.githubusercontent.com/13290379/170804206-4f31f70a-35a4-4c6e-ad4f-7052041f7dd5.gif)
 
 
 
@@ -23,6 +21,11 @@ If you found our code helpful for your research, please cite our paper as:
   Month      = jun,
 }
 ```
+
+## Pipeline
+
+![Github_gif_prepare](https://user-images.githubusercontent.com/13290379/170779589-a9061c75-7c00-4e61-883a-c5083b620893.gif)
+
 
 ## Getting Started
 #### Requirements
