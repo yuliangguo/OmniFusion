@@ -40,6 +40,8 @@ If you found our code helpful for your research, please cite our paper as:
 We trained and evaluated our method on three datasets [Stanford2D3D](http://buildingparser.stanford.edu/dataset.html), 
 [360D](https://vcl3d.github.io/3D60/), [Matterport3D](https://niessner.github.io/Matterport/).
 
+FYI, a standard pre-process of the original Matterport3D dataset is applied for the development of 360-image-based depth estimation. Given the downloaded original dataset, the 360 images and depth maps are rendered by a matlab scrpt included in this [repo](https://github.com/alibaba/UniFuse-Unidirectional-Fusion/blob/main/UniFuse/Matterport3D).
+
 ## Pre-trained models
 
 Our [pre-trained models](https://drive.google.com/drive/folders/1b6mZJhF3j914AZ6TOGXrqgtGcHzHUAOc?usp=sharing) are provided for direct evaluation.
@@ -54,8 +56,6 @@ You can specify the patch fov, patch resolution, patch alignment(3, 4, 5, 6 rows
 ```
 python test.py --fov 80 --patchsize (256, 256) --nrows 4
 ```
-The evaluation code is expected reproduce the experimental results reported in our paper.
-
 
 ## Visualization
 For training, visual results will be saved into tensorboard. In addition, depth maps and point clouds will be saved locally during training/evaluation.
