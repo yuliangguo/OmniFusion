@@ -1,0 +1,13 @@
+matplotlib
+mmcv
+mmsegmentation
+numpy
+OpenEXR
+scikit-learn
+scipy
+tensorboard
+thop
+timm
+torch
+torchvision
+tqdm

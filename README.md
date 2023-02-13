@@ -36,6 +36,14 @@ If you found our code helpful for your research, please cite our paper as:
 - CUDA (tested on 11.6)
 - Other dependencies
 
+```bash
+git clone https://github.com/yuyanli0831/OmniFusion
+cd OmniFusion
+python3 -m venv omni-venv
+source omni-venv/bin/activate
+pip3 install -r requirements.txt
+```
+
 ## Datasets
 We trained and evaluated our method on three datasets [Stanford2D3D](http://buildingparser.stanford.edu/dataset.html), 
 [360D](https://vcl3d.github.io/3D60/), [Matterport3D](https://niessner.github.io/Matterport/).
